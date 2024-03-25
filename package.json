@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "@flydotio/node-demo": "^0.2.1"
+  },
+  "dependencies": {
+    "ejs": "^3.1.9",
+    "express": "^4.19.1",
+    "sqlite3": "^5.1.7"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "type": "module"
+}
