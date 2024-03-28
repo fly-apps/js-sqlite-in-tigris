@@ -1,0 +1,8 @@
+# fly.toml app configuration file generated for jts on 2024-03-28T10:26:54+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = '' # change this for deploy!
+primary_region = 'waw'
+

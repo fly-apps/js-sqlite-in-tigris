@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.5.4",
     "@flydotio/node-demo": "^0.2.1"
   },
   "dependencies": {
