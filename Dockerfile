@@ -31,6 +31,10 @@ COPY --link . .
 # Final stage for app image
 FROM base
 
+# Install extra packages needed to run the app
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y dnsutils
+
 # Copy built application
 COPY --from=build /app /app
 

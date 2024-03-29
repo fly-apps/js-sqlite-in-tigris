@@ -2,6 +2,7 @@ import express from 'express'
 import sqlite3 from 'sqlite3'
 import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import fs from 'fs';
+import dig from 'node-dig-dns';
 
 // set up express web server
 const app = express()
@@ -15,6 +16,7 @@ const S3 = new S3Client({
 });
 
 
+const appName = process.env.FLY_APP_NAME;
 const bucketName = process.env.BUCKET_NAME;
 const customerId = process.env.CUSTOMER_ID || 0;
 const databasePath = process.env.DATABASE_PATH || "./db.sqlite3";
@@ -87,6 +89,18 @@ const setupDb = async () => {
 }
 
 
+const get_machine_id = async (customerId) => {
+  if (!appName) { return "abcd1234" };
+
+  try {
+    const ip = await dig([`${customerId}.customer_id.kv._metadata.${appName}.internal`, 'aaaa', '+short'])
+    const addr = await dig(['+short', '-x', ip]);
+    return addr.split('.')[0];
+  } catch (error) {
+    console.log(`Error getting machine id for ${customerId}`, error)
+  }
+};
+
 // set up sqlite database
 const db = new sqlite3.Database(databasePath)
 setupDb();
@@ -98,7 +112,7 @@ let count = 0
 app.get(`/customers/${customerId}`, async (request, response) => {
   // increment count, creating table row if necessary
   await new Promise((resolve, reject) => {
-    console.log(`Received request for customer: ${customerId}`)
+    console.log(`[worker] Received request for customer: ${customerId}`)
     db.get('SELECT "count" from "welcome"', (err, row) => {
       let query = 'UPDATE "welcome" SET "count" = ?'
 
@@ -123,8 +137,15 @@ app.get(`/customers/${customerId}`, async (request, response) => {
 });
 // Router
 app.get(`/customers/:customerId`, async (request, response) => {
-  console.log(`Received request for customer: ${request.params.customerId}`)
-  response.status(403).send();
+  console.log(`[router] Received request for customer: ${request.params.customerId}`)
+  let machineId = await get_machine_id(request.params.customerId);
+  if (machineId) {
+    console.log(`[router] Forwarding request to machine: ${machineId}`);
+    response.set('fly-replay', `instance=${machineId}`).send();
+  } else {
+    console.error(`[router] Machine not found for customer: ${request.params.customerId}`);
+    response.status(404).send("Not found");
+  }
 })
 
 
